@@ -116,35 +116,38 @@ public class AdditionalPropertiesParser {
             final String[] splittedProperties = split(propertiesString, LIST_SEPARATOR);
             for (String singleKeyValue : splittedProperties) {
                 final String[] splittedKeyValue = split(singleKeyValue, KEY_VALUE_SEPARATOR);
-                switch (splittedKeyValue.length) {
-                    case 2: {
-                        final String key = correctSingleQuotes(splittedKeyValue[0].trim());
-                        lastKey = key;
-                        final String value = correctSingleQuotes(splittedKeyValue[1].trim());
-                        final String existingValue = properties.getProperty(key);
+                if (splittedKeyValue.length == 2) {
+                    final String key = splittedKeyValue[0].trim();
+                    lastKey = key;
+                    final String value = splittedKeyValue[1].trim();
+                    final String existingValue = properties.getProperty(key);
+                    if (existingValue != null) {
+                        properties.setProperty(key, existingValue + LIST_SEPARATOR + value);
+                    } else {
+                        properties.setProperty(key, value);
+                    }
+                } else if (splittedKeyValue.length == 1) {
+                    if (lastKey != null) {
+                        final String value = splittedKeyValue[0].trim();
+                        // assume property to be list and use the last key to add to
+                        final String existingValue = properties.getProperty(lastKey);
                         if (existingValue != null) {
-                            properties.setProperty(key, existingValue + LIST_SEPARATOR + value);
+                            properties.setProperty(lastKey, existingValue + LIST_SEPARATOR + value);
                         } else {
-                            properties.setProperty(key, value);
+                            properties.setProperty(lastKey, value);
                         }
-                        break;
                     }
-                    case 1: {
-                        if (lastKey != null) {
-                            final String value = correctSingleQuotes(splittedKeyValue[0].trim());
-                            // assume property to be list and use the last key to add to
-                            final String existingValue = properties.getProperty(lastKey);
-                            if (existingValue != null) {
-                                properties.setProperty(lastKey, existingValue + LIST_SEPARATOR + value);
-                            } else {
-                                properties.setProperty(lastKey, value);
-                            }
-                        }
-                        break;
+                } else if (splittedKeyValue.length > 2) {
+                    final String key = splittedKeyValue[0].trim();
+                    final String value = singleKeyValue.replaceFirst(key + "=", "").trim();
+                    final String existingValue = properties.getProperty(key);
+                    if (existingValue != null) {
+                        properties.setProperty(key, existingValue + LIST_SEPARATOR + value);
+                    } else {
+                        properties.setProperty(key, value);
                     }
-                    default:
-                        LOG.warning("Found illegal properties " + Arrays.toString(splittedKeyValue));
-
+                } else {
+                    LOG.warning("Found illegal properties " + Arrays.toString(splittedKeyValue));
                 }
             }
         }
